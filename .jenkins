@@ -1,0 +1,240 @@
+def versions = ["3.7", "3.6", "3.5", "2.7"]
+
+def generatePublishStage(job) {
+    return {
+        stage("Publish py:${job}") {
+            withDockerRegistry(registry: [credentialsId: 'vio-docker-hub']) {
+                sh "docker push ${imageName}:${job}-${buildArch}"
+                sh "docker push ${imageName}:${job}-slim-${buildArch}"
+            }
+        }
+    }
+}
+
+def generateManifestStage(job) {
+    return {
+        stage("Publish manifest py:${job}") {
+            withDockerRegistry(registry: [credentialsId: 'vio-docker-hub']) {
+                sh "docker manifest create --amend ${imageName}:${job} ${imageName}:${job}-amd64 ${imageName}:${job}-arm64"
+                sh "docker manifest push --purge ${imageName}:${job}"
+
+                sh "docker manifest create --amend ${imageName}:${job}-slim ${imageName}:${job}-slim-amd64 ${imageName}:${job}-slim-arm64"
+                sh "docker manifest push --purge ${imageName}:${job}-slim"
+            }
+        }
+    }
+}
+
+def publishStagesMap = versions.collectEntries {
+    ["${it}" : generatePublishStage(it)]
+}
+
+def publishManifestsMap = versions.collectEntries {
+    ["${it}" : generateManifestStage(it)]
+}
+
+pipeline {
+
+    agent any
+
+    environment {
+        imageName = 'vaporio/python'
+    }
+
+    triggers {
+        upstream(upstreamProjects: 'vapor-ware/buildpack-deps/master', threshold: hudson.model.Result.SUCCESS)
+    }
+
+    stages {
+
+        stage('Sync') {
+            steps {
+                sh './update.sh'
+            }
+        }
+
+        stage('Pull Base Images') {
+            // To ensure the build nodes have the latest correct arch builds of the
+            // base images, explicitly pull them here.
+            parallel {
+                stage('amd64') {
+                    steps {
+                        sh "docker pull vaporio/buildpack-deps:bionic"
+                    }
+                }
+
+                stage('arm64') {
+                    agent {
+                        label 'arm64'
+                    }
+                    steps {
+                        sh "docker pull vaporio/buildpack-deps:bionic"
+                    }
+                }
+            }
+        }
+
+        stage('py27') {
+            environment {
+                pyVersion = "2.7"
+            }
+            parallel {
+                stage('amd64') {
+                    environment {
+                        buildArch = "amd64"
+                    }
+                    steps {
+                        sh "docker build -t ${imageName}:${pyVersion}-${buildArch} ${pyVersion}/bionic"
+                        sh "docker build -t ${imageName}:${pyVersion}-slim-${buildArch} ${pyVersion}/bionic/lite"
+                    }
+                }
+
+                stage('arm64') {
+                    agent {
+                        label 'arm64'
+                    }
+                    environment {
+                        buildArch = "arm64"
+                    }
+                    steps {
+                        sh "docker build -t ${imageName}:${pyVersion}-${buildArch} ${pyVersion}/bionic"
+                        sh "docker build -t ${imageName}:${pyVersion}-slim-${buildArch} ${pyVersion}/bionic/lite"
+                    }
+                }
+            }
+        }
+
+        stage('py35') {
+            environment {
+                pyVersion = "3.5"
+            }
+            parallel {
+                stage('amd64') {
+                    environment {
+                        buildArch = "amd64"
+                    }
+                    steps {
+                        sh "docker build -t ${imageName}:${pyVersion}-${buildArch} ${pyVersion}/bionic"
+                        sh "docker build -t ${imageName}:${pyVersion}-slim-${buildArch} ${pyVersion}/bionic/lite"
+                    }
+                }
+
+                stage('arm64') {
+                    agent {
+                        label 'arm64'
+                    }
+                    environment {
+                        buildArch = "arm64"
+                    }
+                    steps {
+                        sh "docker build -t ${imageName}:${pyVersion}-${buildArch} ${pyVersion}/bionic"
+                        sh "docker build -t ${imageName}:${pyVersion}-slim-${buildArch} ${pyVersion}/bionic/lite"
+                    }
+                }
+            }
+        }
+
+        stage('py36') {
+            environment {
+                pyVersion = "3.6"
+            }
+            parallel {
+                stage('amd64') {
+                    environment {
+                        buildArch = "amd64"
+                    }
+                    steps {
+                        sh "docker build -t ${imageName}:${pyVersion}-${buildArch} ${pyVersion}/bionic"
+                        sh "docker build -t ${imageName}:${pyVersion}-slim-${buildArch} ${pyVersion}/bionic/lite"
+                    }
+                }
+
+                stage('arm64') {
+                    agent {
+                        label 'arm64'
+                    }
+                    environment {
+                        buildArch = "arm64"
+                    }
+                    steps {
+                        sh "docker build -t ${imageName}:${pyVersion}-${buildArch} ${pyVersion}/bionic"
+                        sh "docker build -t ${imageName}:${pyVersion}-slim-${buildArch} ${pyVersion}/bionic/lite"
+                    }
+                }
+            }
+        }
+
+        stage('py37') {
+            environment {
+                pyVersion = "3.7"
+            }
+            parallel {
+                stage('amd64') {
+                    environment {
+                        buildArch = "amd64"
+                    }
+                    steps {
+                        sh "docker build -t ${imageName}:${pyVersion}-${buildArch} ${pyVersion}/bionic"
+                        sh "docker build -t ${imageName}:${pyVersion}-slim-${buildArch} ${pyVersion}/bionic/lite"
+                    }
+                }
+
+                stage('arm64') {
+                    agent {
+                        label 'arm64'
+                    }
+                    environment {
+                        buildArch = "arm64"
+                    }
+                    steps {
+                        sh "docker build -t ${imageName}:${pyVersion}-${buildArch} ${pyVersion}/bionic"
+                        sh "docker build -t ${imageName}:${pyVersion}-slim-${buildArch} ${pyVersion}/bionic/lite"
+                    }
+                }
+            }
+        }
+
+        stage('Publish Images') {
+            when {
+                branch 'master'
+            }
+            parallel {
+                stage('amd64') {
+                    environment {
+                         buildArch = "amd64"
+                    }
+                    steps {
+                        script {
+                            parallel publishStagesMap
+                        }
+                    }
+                }
+
+                stage('arm64') {
+                    agent {
+                        label 'arm64'
+                    }
+                    environment {
+                        buildArch = "arm64"
+                    }
+                    steps {
+                        script {
+                            parallel publishStagesMap
+                        }
+                    }
+                }
+            }
+        }
+
+        stage ('Publish Manifests') {
+            when {
+                branch 'master'
+            }
+            steps {
+                script {
+                    parallel publishManifestsMap
+                }
+            }
+        }
+    }
+}
