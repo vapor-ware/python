@@ -1,0 +1,66 @@
+def versions = ["3.7", "3.6", "3.5", "2.7"]
+
+def generateBuildStage(job) {
+    return {
+        stage("Build py:${job}") {
+            sh "docker build -t vaporio/python:${job} ${job}/bionic"
+            sh "docker build -t vaporio/python:${job}-slim ${job}/bionic/lite"
+        }
+    }
+}
+
+def generatePublishStage(job) {
+    return {
+        stage("Publish py:${job}") {
+            withDockerRegistry(registry: [credentialsId: 'vio-docker-hub']) {
+                sh "docker push vaporio/python:${job}"
+                sh "docker push vaporio/python:${job}-slim"
+            }
+        }
+    }
+}
+
+def buildStagesMap = versions.collectEntries {
+    ["${it}" : generateBuildStage(it)]
+}
+
+def publishStagesMap = versions.collectEntries {
+    ["${it}" : generatePublishStage(it)]
+}
+
+pipeline {
+
+    agent any
+
+    triggers {
+        upstream(upstreamProjects: 'vapor-ware/buildpack-deps/master', threshold: hudson.model.Result.SUCCESS)
+    }
+
+    stages {
+
+        stage('Sync') {
+            steps {
+                sh './update.sh'
+            }
+        }
+
+        stage('Build') {
+            steps {
+                script {
+                    parallel buildStagesMap
+                }
+            }
+        }
+
+        stage('Publish') {
+            when {
+                branch 'master'
+            }
+            steps {
+                script {
+                    parallel publishStagesMap
+                }
+            }
+        }
+    }
+}
