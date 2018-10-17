@@ -1,0 +1,50 @@
+def versions = ["3.7", "3.6", "3.5", "2.7"]
+
+def generateBuildStage(job) {
+    return {
+        stage("Build py:${job}") {
+            sh "docker build -t vaporio/python:${job} ${job}/bionic"
+        }
+    }
+}
+
+def generatePublishStage(job) {
+    return {
+        stage("Publish py:${job}") {
+            withDockerRegistry(registry: [credentialsId: 'vio-docker-hub']) {
+                sh "docker push vaporio/python:${job}"
+            }
+        }
+    }
+}
+
+def buildStagesMap = versions.collectEntries {
+    ["${it}" : generateBuildStage(it)]
+}
+
+def publishStagesMap = versions.collectEntries {
+    ["${it}" : generatePublishStage(it)]
+}
+
+pipeline {
+
+    agent any
+
+    stages {
+        stage('Build') {
+            steps {
+                script {
+                    parallel buildStagesMap
+                }
+            }
+        }
+
+        stage('Publish') {
+            steps {
+                script {
+                    parallel publishStagesMap
+                }
+            }
+        }
+    }
+}
