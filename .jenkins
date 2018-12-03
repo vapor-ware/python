@@ -4,6 +4,7 @@ def generateBuildStage(job) {
     return {
         stage("Build py:${job}") {
             sh "docker build -t vaporio/python:${job} ${job}/bionic"
+            sh "docker build -t vaporio/python:${job}-lite ${job}/bionic/lite"
         }
     }
 }
@@ -13,6 +14,7 @@ def generatePublishStage(job) {
         stage("Publish py:${job}") {
             withDockerRegistry(registry: [credentialsId: 'vio-docker-hub']) {
                 sh "docker push vaporio/python:${job}"
+                sh "docker push vaporio/python:${job}-lite"
             }
         }
     }
