@@ -113,7 +113,7 @@ for version in "${versions[@]}"; do
 
 	for v in \
 		alpine{3.6,3.7,3.8} \
-		bionic{/lite} \
+		bionic{/lite,} \
 		{wheezy,jessie,stretch}{/slim,} \
 		windows/nanoserver-{1709,sac2016} \
 		windows/windowsservercore-{1709,ltsc2016} \
@@ -134,10 +134,6 @@ for version in "${versions[@]}"; do
 		if [ "$variant" = 'slim' ]; then
 			# use "debian:*-slim" variants for "python:*-slim" variants
 			tag+='-slim'
-		fi
-		if [ "$variant" = 'lite' ]; then
-		    # use "vaporio/foundation:*-lite" variants for "python:*-lite" variants
-		    tag+='-lite'
 		fi
 		if [[ "$version" == 2.* ]]; then
 			template="caveman-${template}"
