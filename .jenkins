@@ -42,6 +42,9 @@ pipeline {
         }
 
         stage('Publish') {
+            when {
+                branch 'master'
+            }
             steps {
                 script {
                     parallel publishStagesMap
