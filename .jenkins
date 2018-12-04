@@ -4,7 +4,7 @@ def generateBuildStage(job) {
     return {
         stage("Build py:${job}") {
             sh "docker build -t vaporio/python:${job} ${job}/bionic"
-            sh "docker build -t vaporio/python:${job}-lite ${job}/bionic/lite"
+            sh "docker build -t vaporio/python:${job}-slim ${job}/bionic/lite"
         }
     }
 }
@@ -14,7 +14,7 @@ def generatePublishStage(job) {
         stage("Publish py:${job}") {
             withDockerRegistry(registry: [credentialsId: 'vio-docker-hub']) {
                 sh "docker push vaporio/python:${job}"
-                sh "docker push vaporio/python:${job}-lite"
+                sh "docker push vaporio/python:${job}-slim"
             }
         }
     }
@@ -33,6 +33,13 @@ pipeline {
     agent any
 
     stages {
+
+        stage('Sync') {
+            steps {
+                sh './update.sh'
+            }
+        }
+
         stage('Build') {
             steps {
                 script {
