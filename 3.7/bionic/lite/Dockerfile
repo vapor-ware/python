@@ -20,7 +20,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 	&& rm -rf /var/lib/apt/lists/*
 
 ENV GPG_KEY 0D96DF4D4110E5C43FBFB17F2D347EA6AA65421D
-ENV PYTHON_VERSION 3.7.0
+ENV PYTHON_VERSION 3.7.1
 
 RUN set -ex \
 	\
@@ -54,7 +54,14 @@ RUN set -ex \
 	&& wget -O python.tar.xz "https://www.python.org/ftp/python/${PYTHON_VERSION%%[a-z]*}/Python-$PYTHON_VERSION.tar.xz" \
 	&& wget -O python.tar.xz.asc "https://www.python.org/ftp/python/${PYTHON_VERSION%%[a-z]*}/Python-$PYTHON_VERSION.tar.xz.asc" \
 	&& export GNUPGHOME="$(mktemp -d)" \
-	&& gpg --batch --keyserver ha.pool.sks-keyservers.net --recv-keys "$GPG_KEY" \
+	&& for server in $(shuf -e \
+	        ha.pool.sks-keyservers.net \
+	        hkp://p80.pool.sks-keyservers.net:80 \
+	        keyserver.ubuntu.com \
+	        hkp://keyserver.ubuntu.com:80 \
+	        pgp.mit.edu) ; do \
+	    gpg --batch --keyserver "$server" --recv-keys "$GPG_KEY" && break || : ; \
+	    done \
 	&& gpg --batch --verify python.tar.xz.asc python.tar.xz \
 	&& { command -v gpgconf > /dev/null && gpgconf --kill all || :; } \
 	&& rm -rf "$GNUPGHOME" python.tar.xz.asc \
