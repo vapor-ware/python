@@ -32,6 +32,10 @@ pipeline {
 
     agent any
 
+    triggers {
+        upstream(upstreamProjects: 'vapor-ware/buildpack-deps/master', threshold: hudson.model.Result.SUCCESS)
+    }
+
     stages {
 
         stage('Sync') {
