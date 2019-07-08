@@ -1,31 +1,63 @@
 def versions = ["3.7", "3.6", "3.5", "2.7"]
 
-def generateBuildStage(job) {
+def generateBuildStageAMD64(job) {
     return {
         stage("Build py:${job}") {
-            sh "docker build -t vaporio/python:${job} ${job}/bionic"
-            sh "docker build -t vaporio/python:${job}-slim ${job}/bionic/lite"
+            sh "docker build -t vaporio/python:${job}-amd64 ${job}/bionic"
+            sh "docker build -t vaporio/python:${job}-slim-amd64 ${job}/bionic/lite"
         }
     }
 }
 
-def generatePublishStage(job) {
+def generatePublishStageAMD64(job) {
     return {
         stage("Publish py:${job}") {
             withDockerRegistry(registry: [credentialsId: 'vio-docker-hub']) {
-                sh "docker push vaporio/python:${job}"
-                sh "docker push vaporio/python:${job}-slim"
+                sh "docker push vaporio/python:${job}-amd64"
+                sh "docker push vaporio/python:${job}-slim-amd64"
+            }
+        }
+    }
+}
+
+def generateBuildStageARM64(job) {
+    return {
+        stage("Build py:${job}") {
+            agent {
+                label 'arm64'
+            }
+            sh "docker build -t vaporio/python:${job}-arm64 ${job}/bionic"
+            sh "docker build -t vaporio/python:${job}-slim-arm64 ${job}/bionic/lite"
+        }
+    }
+}
+
+def generatePublishStageARM64(job) {
+    return {
+        stage("Publish py:${job}") {
+            agent {
+                label 'arm64'
+            }
+            withDockerRegistry(registry: [credentialsId: 'vio-docker-hub']) {
+                sh "docker push vaporio/python:${job}-arm64"
+                sh "docker push vaporio/python:${job}-slim-arm64"
             }
         }
     }
 }
 
 def buildStagesMap = versions.collectEntries {
-    ["${it}" : generateBuildStage(it)]
+    [
+        "${it}-amd64" : generateBuildStageAMD64(it),
+        "${it}-arm64" : generateBuildStageARM64(it)
+    ]
 }
 
 def publishStagesMap = versions.collectEntries {
-    ["${it}" : generatePublishStage(it)]
+    [
+        "${it}-amd64" : generatePublishStageAMD64(it),
+        "${it}-arm64" : generatePublishStageARM64(it)
+    ]
 }
 
 pipeline {
