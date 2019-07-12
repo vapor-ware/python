@@ -65,7 +65,9 @@ pipeline {
 
                 stage('arm64') {
                     agent {
-                        label 'arm64'
+                        node {
+                            label 'arm0'
+                        }
                     }
                     steps {
                         sh "docker pull vaporio/buildpack-deps:bionic"
@@ -91,7 +93,9 @@ pipeline {
 
                 stage('arm64') {
                     agent {
-                        label 'arm64'
+                        node {
+                            label 'arm0'
+                        }
                     }
                     environment {
                         buildArch = "arm64"
@@ -121,7 +125,9 @@ pipeline {
 
                 stage('arm64') {
                     agent {
-                        label 'arm64'
+                        node {
+                            label 'arm0'
+                        }
                     }
                     environment {
                         buildArch = "arm64"
@@ -151,7 +157,9 @@ pipeline {
 
                 stage('arm64') {
                     agent {
-                        label 'arm64'
+                        node {
+                            label 'arm0'
+                        }
                     }
                     environment {
                         buildArch = "arm64"
@@ -181,7 +189,9 @@ pipeline {
 
                 stage('arm64') {
                     agent {
-                        label 'arm64'
+                        node {
+                            label 'arm0'
+                        }
                     }
                     environment {
                         buildArch = "arm64"
@@ -212,7 +222,9 @@ pipeline {
 
                 stage('arm64') {
                     agent {
-                        label 'arm64'
+                        node {
+                            label 'arm0'
+                        }
                     }
                     environment {
                         buildArch = "arm64"
