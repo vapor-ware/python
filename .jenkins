@@ -1,4 +1,4 @@
-def versions = ["3.10", "3.9", "3.8", "3.7", "3.6"]
+def versions = ["3.10-rc", "3.9", "3.8", "3.7", "3.6"]
 
 def generatePublishStage(job) {
     return {
